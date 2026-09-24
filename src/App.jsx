@@ -5,6 +5,14 @@ import {
   NOTIFICATIONS as INITIAL_NOTIFICATIONS,
   INITIAL_NUTRITION
 } from './data/mockData';
+import {
+  loadFromStorage,
+  saveToStorage,
+  calculateWinner,
+  LS_GALLERY_KEY,
+    LS_CHALLENGES_KEY,
+  LS_USER_STATS_KEY
+} from './data/arenaData';
 
 // Common Components
 import StatusBar from './components/common/StatusBar';
@@ -25,6 +33,7 @@ import AICameraModal from './components/screens/AICameraModal';
 import ProgressScreen from './components/screens/ProgressScreen';
 import ProfileScreen from './components/screens/ProfileScreen';
 import NutritionScreen from './components/screens/NutritionScreen';
+import ChallengeArenaScreen from './components/screens/ChallengeArenaScreen';
 
 import { sounds } from './utils/audio';
 import { Smartphone, Monitor, Volume2, VolumeX, Sparkles } from 'lucide-react';
@@ -33,13 +42,42 @@ export default function App() {
   // App Phase: 'splash' | 'onboarding' | 'main'
   const [appPhase, setAppPhase] = useState('splash');
   
-  // Navigation Tab: 'home' | 'workouts' | 'ai-coach' | 'progress' | 'profile'
+  // Navigation Tab: 'home' | 'workouts' | 'ai-coach' | 'arena' | 'profile'
   const [activeTab, setActiveTab] = useState('home');
 
   // App State
   const [user, setUser] = useState(INITIAL_USER);
   const [notifications, setNotifications] = useState(INITIAL_NOTIFICATIONS);
   const [nutritionData, setNutritionData] = useState(INITIAL_NUTRITION);
+
+  // ── NEW: Arena & Gallery State ──
+  // Gallery posts for the logged-in user (persisted to localStorage)
+  const [myGalleryPosts, setMyGalleryPosts] = useState(() =>
+    loadFromStorage(LS_GALLERY_KEY, [])
+  );
+  // All challenges (persisted to localStorage)
+  const [challenges, setChallenges] = useState(() =>
+    loadFromStorage(LS_CHALLENGES_KEY, [])
+  );
+  // User arena stats: wins / losses / draws (persisted)
+  const [arenaStats, setArenaStats] = useState(() =>
+    loadFromStorage(LS_USER_STATS_KEY, { wins: 0, losses: 0, draws: 0 })
+  );
+
+  // Persist gallery posts on change
+  useEffect(() => {
+    saveToStorage(LS_GALLERY_KEY, myGalleryPosts);
+  }, [myGalleryPosts]);
+
+  // Persist challenges on change
+  useEffect(() => {
+    saveToStorage(LS_CHALLENGES_KEY, challenges);
+  }, [challenges]);
+
+  // Persist arena stats on change
+  useEffect(() => {
+    saveToStorage(LS_USER_STATS_KEY, arenaStats);
+  }, [arenaStats]);
 
   // Modals & Active Modes
   const [selectedWorkout, setSelectedWorkout] = useState(null);
@@ -100,6 +138,8 @@ export default function App() {
       setIsWearableOpen(true);
     } else if (action === 'open_ai_coach') {
       setActiveTab('ai-coach');
+    } else if (action === 'open_arena') {
+      setActiveTab('arena');
     }
   };
 
@@ -131,6 +171,90 @@ export default function App() {
     setUser(INITIAL_USER);
     setNutritionData(INITIAL_NUTRITION);
     setAppPhase('splash');
+  };
+
+  // ── NEW: Gallery Handlers ──
+  const handleAddGalleryPost = (post) => {
+    setMyGalleryPosts(prev => [post, ...prev]);
+  };
+
+  const handleDeleteGalleryPost = (postId) => {
+    setMyGalleryPosts(prev => prev.filter(p => p.id !== postId));
+  };
+
+  // ── NEW: Challenge Handlers ──
+  const handleSendChallenge = (newChallenge) => {
+    setChallenges(prev => [newChallenge, ...prev]);
+    // Add notification
+    setNotifications(prev => [{
+      id: `notif-ch-${Date.now()}`,
+      title: '⚔️ Challenge Sent!',
+      body: `You challenged ${newChallenge.opponentName} to a ${newChallenge.activity.replace('_',' ')} competition.`,
+      time: 'Just now',
+      unread: true,
+      action: 'open_arena'
+    }, ...prev]);
+  };
+
+  const handleRespondChallenge = (challengeId, response) => {
+    setChallenges(prev => prev.map(c => {
+      if (c.id !== challengeId) return c;
+      const updatedStatus = response === 'accepted' ? 'active' : 'declined';
+      return { ...c, status: updatedStatus, updatedAt: new Date().toISOString() };
+    }));
+    if (response === 'accepted') {
+      setNotifications(prev => [{
+        id: `notif-ch-acc-${Date.now()}`,
+        title: '✅ Challenge Accepted!',
+        body: 'A challenge is now active. Submit your result before the deadline!',
+        time: 'Just now',
+        unread: true,
+        action: 'open_arena'
+      }, ...prev]);
+    }
+  };
+
+  const handleSubmitResult = (challengeId, result) => {
+    setChallenges(prev => {
+      const updated = prev.map(c => {
+        if (c.id !== challengeId) return c;
+        const isChallenger = c.challengerId === 'me';
+        const updatedChallenge = {
+          ...c,
+          challengerResult: isChallenger ? result : c.challengerResult,
+          opponentResult: !isChallenger ? result : c.opponentResult,
+          updatedAt: new Date().toISOString()
+        };
+        // Both results submitted → auto-calculate winner
+        if (updatedChallenge.challengerResult && updatedChallenge.opponentResult) {
+          const winner = calculateWinner(updatedChallenge);
+          updatedChallenge.winnerId = winner;
+          updatedChallenge.status = 'completed';
+
+          // Update arena stats
+          const iAmChallenger = updatedChallenge.challengerId === 'me';
+          const iWon = (winner === 'challenger' && iAmChallenger) || (winner === 'opponent' && !iAmChallenger);
+          const isDraw = winner === 'draw';
+          setArenaStats(prevStats => ({
+            wins: iWon ? prevStats.wins + 1 : prevStats.wins,
+            losses: (!iWon && !isDraw) ? prevStats.losses + 1 : prevStats.losses,
+            draws: isDraw ? prevStats.draws + 1 : prevStats.draws
+          }));
+
+          // Add win/loss notification
+          setNotifications(notifPrev => [{
+            id: `notif-ch-done-${Date.now()}`,
+            title: iWon ? '🏆 Challenge Won!' : isDraw ? '🤝 Challenge Draw!' : '❌ Challenge Lost',
+            body: `Your ${updatedChallenge.activity.replace('_',' ')} challenge vs ${iAmChallenger ? updatedChallenge.opponentName : updatedChallenge.challengerName} is complete.`,
+            time: 'Just now',
+            unread: true,
+            action: 'open_arena'
+          }, ...notifPrev]);
+        }
+        return updatedChallenge;
+      });
+      return updated;
+    });
   };
 
   const unreadNotificationCount = notifications.filter(n => n.unread).length;
@@ -219,9 +343,24 @@ export default function App() {
                 <ProgressScreen user={user} />
               )}
 
+              {activeTab === 'arena' && (
+                <ChallengeArenaScreen
+                  user={user}
+                  challenges={challenges}
+                  galleryPosts={myGalleryPosts}
+                  onSendChallenge={handleSendChallenge}
+                  onRespondChallenge={handleRespondChallenge}
+                  onSubmitResult={handleSubmitResult}
+                />
+              )}
+
               {activeTab === 'profile' && (
                 <ProfileScreen 
                   user={user}
+                  arenaStats={arenaStats}
+                  myGalleryPosts={myGalleryPosts}
+                  onAddGalleryPost={handleAddGalleryPost}
+                  onDeleteGalleryPost={handleDeleteGalleryPost}
                   onOpenWearable={() => setIsWearableOpen(true)}
                   onOpenNutrition={() => setIsNutritionOpen(true)}
                   onResetDemo={handleResetDemo}

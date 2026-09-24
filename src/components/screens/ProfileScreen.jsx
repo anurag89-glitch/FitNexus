@@ -15,11 +15,23 @@ import {
   Scale,
   Ruler,
   Dumbbell,
-  Salad
+  Salad,
+  Trophy,
+  Swords
 } from 'lucide-react';
 import { sounds } from '../../utils/audio';
+import FitnessGallery from '../common/FitnessGallery';
 
-export default function ProfileScreen({ user, onOpenWearable, onOpenNutrition, onResetDemo }) {
+export default function ProfileScreen({ 
+  user, 
+  arenaStats, 
+  myGalleryPosts, 
+  onAddGalleryPost, 
+  onDeleteGalleryPost, 
+  onOpenWearable, 
+  onOpenNutrition, 
+  onResetDemo 
+}) {
   const [editing, setEditing] = useState(false);
   const [height, setHeight] = useState(user.height || 175);
   const [weight, setWeight] = useState(user.weight || 68);
@@ -89,6 +101,60 @@ export default function ProfileScreen({ user, onOpenWearable, onOpenNutrition, o
         }}>
           {level} Fitness Level
         </span>
+
+        {/* Arena Record */}
+        <div style={{
+          display: 'flex',
+          gap: '8px',
+          marginTop: '16px',
+          width: '100%',
+          justifyContent: 'center'
+        }}>
+          <div style={{
+            flex: 1,
+            maxWidth: '96px',
+            background: 'rgba(16, 185, 129, 0.08)',
+            border: '1px solid rgba(16, 185, 129, 0.25)',
+            borderRadius: '12px',
+            padding: '8px 4px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-green)' }}>
+              {arenaStats?.wins || 0}
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Wins</div>
+          </div>
+
+          <div style={{
+            flex: 1,
+            maxWidth: '96px',
+            background: 'rgba(239, 68, 68, 0.08)',
+            border: '1px solid rgba(239, 68, 68, 0.25)',
+            borderRadius: '12px',
+            padding: '8px 4px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-red)' }}>
+              {arenaStats?.losses || 0}
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Losses</div>
+          </div>
+
+          <div style={{
+            flex: 1,
+            maxWidth: '96px',
+            background: 'rgba(0, 210, 255, 0.08)',
+            border: '1px solid var(--border-cyan)',
+            borderRadius: '12px',
+            padding: '8px 4px',
+            textAlign: 'center'
+          }}>
+            <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--accent-cyan)' }}>
+              {arenaStats?.draws || 0}
+            </div>
+            <div style={{ fontSize: '10.5px', color: 'var(--text-muted)', fontWeight: 600 }}>Draws</div>
+          </div>
+        </div>
       </div>
 
       {/* 2. Fitness Information Section */}
@@ -180,6 +246,15 @@ export default function ProfileScreen({ user, onOpenWearable, onOpenNutrition, o
           </div>
         </div>
       </div>
+
+      {/* Fitness Gallery */}
+      <FitnessGallery
+        posts={myGalleryPosts || []}
+        ownerId="me"
+        viewerId="me"
+        onAdd={onAddGalleryPost}
+        onDelete={onDeleteGalleryPost}
+      />
 
       {/* 3. Connected Devices */}
       <div className="nexus-card" style={{ padding: '16px' }}>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Home, Dumbbell, Sparkles, TrendingUp, User } from 'lucide-react';
+import { Home, Dumbbell, Sparkles, TrendingUp, User, Trophy } from 'lucide-react';
 import { sounds } from '../../utils/audio';
 
 export default function BottomNav({ activeTab, onSelectTab }) {
@@ -7,6 +7,7 @@ export default function BottomNav({ activeTab, onSelectTab }) {
     { id: 'home', label: 'Home', icon: Home },
     { id: 'workouts', label: 'Workouts', icon: Dumbbell },
     { id: 'ai-coach', label: 'AI Coach', icon: Sparkles, hero: true },
+    { id: 'arena', label: 'Arena', icon: Trophy },
     { id: 'progress', label: 'Progress', icon: TrendingUp },
     { id: 'profile', label: 'Profile', icon: User },
   ];
