@@ -36,7 +36,6 @@ import NutritionScreen from './components/screens/NutritionScreen';
 import ChallengeArenaScreen from './components/screens/ChallengeArenaScreen';
 
 import { sounds } from './utils/audio';
-import { Smartphone, Monitor, Volume2, VolumeX, Sparkles } from 'lucide-react';
 
 export default function App() {
   // App Phase: 'splash' | 'onboarding' | 'main'
@@ -89,15 +88,6 @@ export default function App() {
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [isNutritionOpen, setIsNutritionOpen] = useState(false);
 
-  // Viewport Frame Mode (for desktop reviewers to preview mobile phone frame or expand)
-  const [isFullView, setIsFullView] = useState(false);
-  const [soundEnabled, setSoundEnabled] = useState(true);
-
-  // Toggle sound
-  const handleToggleSound = () => {
-    sounds.enabled = !soundEnabled;
-    setSoundEnabled(!soundEnabled);
-  };
 
   // Open workout detail sheet
   const handleOpenWorkoutDetails = (workout) => {
@@ -261,26 +251,8 @@ export default function App() {
 
   return (
     <div className="app-viewport-wrapper">
-      {/* Desktop Helper Bar for Previewers & Evaluators */}
-      <div className="desktop-controls-bar">
-        <span style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#fff', fontWeight: 600 }}>
-          <img src="/fitnexus-logo.png" alt="logo" style={{ width: '16px', height: '16px', borderRadius: '4px' }} />
-          FitNexus Mobile Preview
-        </span>
-        <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
-        <button onClick={() => setIsFullView(!isFullView)} title="Toggle Mobile Phone Bezel / Full Screen">
-          {isFullView ? <Smartphone size={14} /> : <Monitor size={14} />}
-          {isFullView ? "Phone Frame" : "Full View"}
-        </button>
-        <span style={{ color: 'rgba(255,255,255,0.2)' }}>|</span>
-        <button onClick={handleToggleSound} title="Toggle Audio Feedback">
-          {soundEnabled ? <Volume2 size={14} color="#00d2ff" /> : <VolumeX size={14} />}
-          {soundEnabled ? "Audio On" : "Audio Muted"}
-        </button>
-      </div>
-
       {/* Main Mobile App Shell */}
-      <div className={`phone-shell ${isFullView ? 'full-view' : ''}`} id="fitnexus-mobile-app">
+      <div className="phone-shell" id="fitnexus-mobile-app">
         {/* Status Bar */}
         <StatusBar />
 

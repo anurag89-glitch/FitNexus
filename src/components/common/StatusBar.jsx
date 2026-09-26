@@ -24,10 +24,6 @@ export default function StatusBar() {
 
       <div className="dynamic-island">
         <div className="island-camera" />
-        <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-          <span style={{ width: '4px', height: '4px', background: '#00d2ff', borderRadius: '50%' }} />
-          <span style={{ fontSize: '9px', color: '#94a3b8', fontFamily: 'var(--font-mono)' }}>AI</span>
-        </div>
         <div className="island-sensor" />
       </div>
 
